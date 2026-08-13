@@ -83,7 +83,7 @@ def listar_situacoes(token):
     if id_modulo_pedido_venda is None:
         raise RuntimeError("Não encontrei o módulo de Pedidos de Venda em /situacoes/modulos")
 
-    data = _request("GET", f"/situacoes/{id_modulo_pedido_venda}", token=token)
+    data = _request("GET", f"/situacoes/modulos/{id_modulo_pedido_venda}", token=token)
     situacoes = data.get("data", [])
     return {s["nome"]: s["id"] for s in situacoes}
 
