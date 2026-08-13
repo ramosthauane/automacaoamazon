@@ -1,0 +1,45 @@
+name: Automação Estoque Amazon Bling
+
+on:
+  schedule:
+    # Roda todo dia às 08:00 no horário de Brasília (11:00 UTC)
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+    # Permite rodar manualmente pelo botão "Run workflow" no GitHub
+    inputs:
+      modo_teste:
+        description: "Modo teste (não altera nada, só mostra o que faria)"
+        required: false
+        default: "true"
+
+jobs:
+  rodar-automacao:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Rodar automação
+        env:
+          BLING_CLIENT_ID: ${{ secrets.BLING_CLIENT_ID }}
+          BLING_CLIENT_SECRET: ${{ secrets.BLING_CLIENT_SECRET }}
+          BLING_REFRESH_TOKEN: ${{ secrets.BLING_REFRESH_TOKEN }}
+          MODO_TESTE: ${{ github.event.inputs.modo_teste || 'false' }}
+        run: python automacao_estoque_amazon.py
+
+      - name: Atualizar refresh token (se o Bling gerou um novo)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -f novo_refresh_token.txt ]; then
+            gh secret set BLING_REFRESH_TOKEN --repo "${{ github.repository }}" < novo_refresh_token.txt
+            echo "Secret BLING_REFRESH_TOKEN atualizado."
+          else
+            echo "Nenhum refresh token novo para salvar."
+          fi
